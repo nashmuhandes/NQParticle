@@ -1,0 +1,178 @@
+// Copyright 2021 Nash Muhandes
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions
+// are met:
+//
+// 1. Redistributions of source code must retain the above copyright
+//    notice, this list of conditions and the following disclaimer.
+// 2. Redistributions in binary form must reproduce the above copyright
+//    notice, this list of conditions and the following disclaimer in the
+//    documentation and/or other materials provided with the distribution.
+// 3. The name of the author may not be used to endorse or promote products
+//    derived from this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+// IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+// OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+// IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
+// INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+// NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+// THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+class NQParticle : Actor
+{
+	bool isBlood;
+	int maxAge;
+
+	//===========================================================================
+	//
+	//
+	//
+	//===========================================================================
+
+	Default
+	{
+		FloatBobPhase 0;
+		RenderStyle "Stencil";
+		+FORCEXYBILLBOARD
+		+NOINTERACTION
+	}
+
+	//===========================================================================
+	//
+	//
+	//
+	//===========================================================================
+
+	override void PostBeginPlay(void)
+	{
+		Super.PostBeginPlay();
+
+		maxAge = random[rnd_NQParticleMaxAge](10, 20);
+
+		int s = 0;
+		Color c = Color(0, 0, 0);
+
+		if (!isBlood)
+		{
+			s = random[rnd_NQParticleShade](50, 150);
+			c = Color(s, s, s);
+			SetShade(c);
+		}
+		else
+		{
+			if (BloodTranslation == 0)
+			{
+				s = random[rnd_NQParticleShade](0, 150);
+				c = Color(255 - s, 0, 0);
+				SetShade(c);
+			}
+			else
+			{
+				s = random[rnd_NQParticleShade](-100, 0);
+				c = BloodColor;
+				c = Color(c.R + s, c.G + s, c.B + s);
+				SetShade(c);
+			}
+		}
+
+		let pmo = players[consoleplayer].camera;
+		if (pmo)
+		{
+			double dist = pmo.Distance3D(self);
+			if (dist < 1.0)
+				dist = 1.0;
+			double sc = 0.25;
+			sc += (dist / 1000.0);
+			Scale = (sc, sc);
+		}
+		else
+		{
+			Destroy();
+			return;
+		}
+	}
+
+	override void Tick(void)
+	{
+		if (!bNoTimeFreeze && isFrozen())
+			return;
+
+		Super.Tick();
+
+		if (!isBlood)
+		{
+			let v = Vec3Offset(0.0, 0.0, -0.5);
+			SetZ(v.Z);
+		}
+
+		if (GetAge() > maxAge)
+		{
+			Destroy();
+			return;
+		}
+	}
+
+	//===========================================================================
+	//
+	//
+	//
+	//===========================================================================
+
+	static void SpawnNQParticle(Actor mo, bool isBlood = false)
+	{
+		double ang = mo.Angle + frandom[rnd_NQParticleAngle](-45.0, 45.0);
+
+		for (int i = 0; i < 50; i++)
+		{
+			int spawnChance = 90;
+			if (random[rnd_ScaledParticleSpawn]() < spawnChance)
+				continue;
+
+			let p = NQParticle(mo.Spawn("NQParticle", mo.Pos, NO_REPLACE));
+			if (p)
+			{
+				double o = 16.0;
+				Vector3 sPos =
+				(
+					frandom[rnd_ScaledParticleSpawn](-o, o),
+					frandom[rnd_ScaledParticleSpawn](-o, o),
+					frandom[rnd_ScaledParticleSpawn](-o, o)
+				);
+				p.SetOrigin(mo.Vec3Offset(sPos.X, sPos.Y, sPos.Z), false);
+
+				if (isBlood)
+				{
+					if (mo.Target)
+					{
+						p.CopyBloodColor(mo.Target);
+					}
+
+					p.Angle = ang;
+					p.VelFromAngle(-frandom[rnd_NQParticleAngle](2.0, 4.0));
+					p.Vel.Z = frandom[rnd_ScaledParticleSpawn](-0.5, 0.5);
+
+					p.isBlood = true;
+				}
+			}
+		}
+	}
+
+	//===========================================================================
+	//
+	//
+	//
+	//===========================================================================
+
+	States
+	{
+	Spawn:
+		PTCL A -1 Bright;
+		Stop;
+	}
+}

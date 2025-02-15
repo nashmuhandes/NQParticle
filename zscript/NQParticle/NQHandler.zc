@@ -1,0 +1,16 @@
+/*
+class NQHandler : EventHandler
+{
+	override void CheckReplacement(ReplaceEvent e)
+	{
+		if (e.Replacee == "Blood" || e.Replacee == "BloodSplatter")
+		{
+			e.Replacement = "NQBlood";
+		}
+		else if (e.Replacee == "BulletPuff")
+		{
+			e.Replacement = "NQBulletPuff";
+		}
+	}
+}
+*/

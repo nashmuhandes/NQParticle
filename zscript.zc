@@ -1,0 +1,5 @@
+version "4.8.2"
+
+#include "zscript/NQParticle/NQParticle.zc"
+#include "zscript/NQParticle/NQBulletPuff.zc"
+#include "zscript/NQParticle/NQBlood.zc"
